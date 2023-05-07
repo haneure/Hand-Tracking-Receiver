@@ -1,0 +1,23 @@
+fileFormatVersion: 2
+guid: e80ebc97aca3d62478bf4610d0e8aa27
+TrueTypeFontImporter:
+  externalObjects: {}
+  serializedVersion: 4
+  fontSize: 16
+  forceTextureCase: -2
+  characterSpacing: 0
+  characterPadding: 1
+  includeFontData: 1
+  fontName: SAO Welcome
+  fontNames:
+  - SAO Welcome
+  fallbackFontReferences:
+  - {fileID: 12800000, guid: 82d9b72ad96ff5e43aec50da0614fd11, type: 3}
+  customCharacters: 
+  fontRenderingMode: 0
+  ascentCalculationMode: 1
+  useLegacyBoundsCalculation: 0
+  shouldRoundAdvanceValue: 1
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

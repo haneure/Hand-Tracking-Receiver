@@ -1,0 +1,5 @@
+V1
+Add demo gesture untuk UI dan Grab
+
+V1.1
+Add terminal dengan password, detailed info UI

@@ -9,6 +9,7 @@ public class Player : MonoBehaviour
     private Vector3 v_movement;
     private Vector3 v_velocity;
     private float rotateX;
+    private float rotateY;
     private float inputX;
     private float inputZ;
     public float speed = 5f;
@@ -53,6 +54,7 @@ public class Player : MonoBehaviour
        
         inputZ = Input.GetAxis("Vertical");
 
+        // Rotate Left Right
         if (Input.GetKey(KeyCode.Q))
         {
             rotateX = -1f;
@@ -73,9 +75,31 @@ public class Player : MonoBehaviour
             rotateX = 0f;
         }
 
+        // Rotate Up Down
+        if (Input.GetKey(KeyCode.Z))
+        {
+            rotateY = -1f;
+        }
+
+        if (Input.GetKeyUp(KeyCode.Z))
+        {
+            rotateY = 0f;
+        }
+
+        if (Input.GetKey(KeyCode.X))
+        {
+            rotateY = 1f;
+        }
+
+        if (Input.GetKeyUp(KeyCode.X))
+        {
+            rotateY = 0f;
+        }
+
         float inputX = Input.GetAxis("Horizontal");
         v_movement = (controller.transform.forward * inputZ + controller.transform.right * inputX);
         controller.transform.Rotate(Vector3.up * rotateX * (100f * Time.deltaTime));
+        controller.transform.Rotate(Vector3.right * rotateY * (100f * Time.deltaTime));
 
         controller.Move(v_movement * speed * Time.deltaTime);
         controller.Move(v_velocity);

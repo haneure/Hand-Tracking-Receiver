@@ -135,6 +135,13 @@ public class ui_button : MonoBehaviour
         }
     }
 
+    public void spawnGameObject(GameObject gameobject)
+    {
+        player = GameObject.Find("Player");
+        Vector3 summonPosition = new Vector3(player.transform.position.x + 2f, player.transform.position.y, player.transform.position.z + 2f);
+        Instantiate(gameobject, summonPosition, Quaternion.identity);
+    }
+
     public void SpawnSphere()
     {
         GameObject sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);

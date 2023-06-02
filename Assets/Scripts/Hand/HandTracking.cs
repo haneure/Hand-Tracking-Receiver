@@ -37,7 +37,16 @@ public class HandTracking : MonoBehaviour
     public GameObject handSphere;
 
     // Raycast
+    public bool useRaycast = true;
     GameObject rayLine;
+
+    // SphereCast
+    public float sphereRadius;
+    public float sphereMaxDistance;
+    public LayerMask layerMask;
+    private Vector3 sphereOrigin;
+    private Vector3 sphereDirection;
+    private float currentSphereHitDistance;
 
     // z axis
     public float positionConstant;
@@ -56,20 +65,38 @@ public class HandTracking : MonoBehaviour
     public string rightHandGesture;
 
     // UI
-    GameObject leftDetectedGestureUI;
-    GameObject rightDetectedGestureUI;
+    public bool showAdvancedUI = false;
+    public GameObject leftDetectedGestureUI;
+    public GameObject leftLmListUI;
+    public GameObject rightDetectedGestureUI;
+    public GameObject rightLmListUI;
+
+    // Gesture History
+    public List<String> leftGestureHistory;
+    public List<String> rightGestureHistory;
 
     void Start()
     {
-        leftDetectedGestureUI = GameObject.Find("LeftGesture");
-        rightDetectedGestureUI = GameObject.Find("RightGesture");
+        //leftDetectedGestureUI = GameObject.Find("LeftGestureUI");
+        //leftLmListUI = GameObject.Find("LeftLmListUI");
+        //rightDetectedGestureUI = GameObject.Find("RightGestureUI");
+        //rightLmListUI = GameObject.Find("RightLmListUI");
+
         handSphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
         handSphere.transform.localScale = new Vector3(0, 0, 0);
         handSphere.transform.parent = this.transform;
         handSphere.AddComponent<Rigidbody>();
         handSphere.GetComponent<Rigidbody>().constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationY | RigidbodyConstraints.FreezeRotationZ;
         handSphere.GetComponent<Rigidbody>().collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
-        rayLine = new GameObject("RayLine");
+        handSphere.AddComponent<onTriggerToPublic>();
+        if (hand == Hand.left)
+        {
+            rayLine = new GameObject("LeftRayLine");
+        } else if (hand == Hand.right)
+        {
+            rayLine = new GameObject("RightRayLine");
+        }
+        
         rayLine.transform.SetParent(handSphere.transform, false);
         rayLine.AddComponent<LineRenderer>();
         rayLine.GetComponent<LineRenderer>().enabled = false;
@@ -91,18 +118,31 @@ public class HandTracking : MonoBehaviour
                 if (leftHand.Length != 0)
                 {
                     // Detected gesture
-                    leftDetectedGestureUI.GetComponent<Text>().text = "Left: " + leftHandGesture;
-
+                    StartCoroutine(addLeftGestureHistory(leftHandGesture));
+                    leftDetectedGestureUI.GetComponent<Text>().text = "Gesture: " + leftHandGesture;
+                    
                     leftHand = leftHand.Remove(0, 1);
                     leftHand = leftHand.Remove(leftHand.Length - 1, 1);
                     string[] points = leftHand.Split(',');
 
                     showLeftHandUI(points);
-                    calculatePosition(points, this);
-                    if (multiple)
-                        RaycastMultiple();
-                    else
-                        RaycastSingle();
+                    calculatePosition(points, this, "left");
+                    if (useRaycast)
+                    {
+                        rayLine.GetComponent<LineRenderer>().enabled = true;
+                        if (multiple)
+                            RaycastMultiple();
+                        else
+                            RaycastSingle();
+                            if (leftHandGesture == "normal")
+                                GameObject.Find("LeftRayLine").GetComponent<LineRenderer>().enabled = true;
+                            else
+                                GameObject.Find("LeftRayLine").GetComponent<LineRenderer>().enabled = false;
+                    } else
+                    {
+                        normalInteractor();
+                        rayLine.GetComponent<LineRenderer>().enabled = false;
+                    }
                 }
                 else
                 {
@@ -120,16 +160,31 @@ public class HandTracking : MonoBehaviour
                 if (rightHand.Length != 0)
                 {
                     // Detected gesture
-                    rightDetectedGestureUI.GetComponent<Text>().text = "Right: " + rightHandGesture;
+                    StartCoroutine(addRightGestureHistory(rightHandGesture));
+                    rightDetectedGestureUI.GetComponent<Text>().text = "Gesture: " + rightHandGesture;
+
                     rightHand = rightHand.Remove(0, 1);
                     rightHand = rightHand.Remove(rightHand.Length - 1, 1);
                     string[] points = rightHand.Split(',');
 
-                    calculatePosition(points, this);
-                    if (multiple)
-                        RaycastMultiple();
-                    else
-                        RaycastSingle();
+                    calculatePosition(points, this, "right");
+                    if (useRaycast)
+                    {
+                        rayLine.GetComponent<LineRenderer>().enabled = true;
+                        if (multiple)
+                            RaycastMultiple();
+                        else
+                            RaycastSingle();
+                            if (rightHandGesture == "normal")
+                                GameObject.Find("RightRayLine").GetComponent<LineRenderer>().enabled = true;
+                            else
+                                GameObject.Find("RightRayLine").GetComponent<LineRenderer>().enabled = false;
+
+                    } else
+                    {
+                        normalInteractor();
+                        rayLine.GetComponent<LineRenderer>().enabled = false;
+                    }
                 }
                 else
                 {
@@ -139,6 +194,43 @@ public class HandTracking : MonoBehaviour
         }
     }
 
+    private void normalInteractor()
+    {
+        if (handSphere)
+        {
+            sphereOrigin = handSphere.transform.position;
+            sphereDirection = handSphere.transform.forward;
+            RaycastHit hit;
+
+            if (Physics.SphereCast(sphereOrigin, sphereRadius, sphereDirection, out hit, sphereMaxDistance, layerMask, QueryTriggerInteraction.UseGlobal))
+            {
+                currentSphereHitDistance = hit.distance;
+                Debug.Log(hit.collider.name);
+
+                detectedObject = hit.collider.gameObject;
+                detectedObject.GetComponent<AlyxGrabInteractable>().interactorObject = this.gameObject;
+                detectedObject.GetComponent<AlyxGrabInteractable>().isHitByRaycast = true;
+                detectedObject.GetComponent<AlyxGrabInteractable>().OnSelectedEntered();
+
+            } else
+            {
+                currentSphereHitDistance = sphereMaxDistance;
+            }
+        }
+        //onTriggerToPublic handTrigger = handSphere.GetComponent<onTriggerToPublic>();
+        //if (handTrigger.publicOther != null)
+        //{
+            //Debug.Log("Event: " + handTrigger.eventName + " " + handTrigger.publicOther.name);
+        //}
+    }
+
+    private void OnDrawGizmosSelected()
+    {
+        Gizmos.color = Color.green;
+        Debug.DrawLine(sphereOrigin, sphereOrigin + sphereDirection * currentSphereHitDistance);
+        Gizmos.DrawWireSphere(sphereOrigin + sphereDirection * currentSphereHitDistance, sphereRadius);
+    }
+
     private void RaycastSingle()
     {
         if (handSphere)
@@ -146,6 +238,7 @@ public class HandTracking : MonoBehaviour
             LineRenderer rayLineRenderer = rayLine.GetComponent<LineRenderer>();
             rayLineRenderer.startWidth = 0.05f;
             rayLineRenderer.endWidth = 0.05f;
+
             Vector3 origin = handSphere.transform.position;
             Vector3 direction = handSphere.transform.forward;
 
@@ -219,7 +312,7 @@ public class HandTracking : MonoBehaviour
         }
     }
 
-    private void calculatePosition(string[] points, HandTracking handTracking)
+    private void calculatePosition(string[] points, HandTracking handTracking, string type)
     {
         Vector3 point0 = new Vector3(float.Parse(points[0]), float.Parse(points[1]), float.Parse(points[2]));
         Vector3 point5 = new Vector3(float.Parse(points[15]), float.Parse(points[16]), float.Parse(points[17]));
@@ -230,6 +323,17 @@ public class HandTracking : MonoBehaviour
         //handSphere.transform.localPosition = new Vector3(Math.Abs((point12.x / 100 - point0.x / 100)) / 2, Math.Abs((point12.y / 100 - point0.y / 100)) / 2, Math.Abs((point12.z / 100 - point0.z / 100)) / 2);
 
 
+        if (type == "right")
+        {
+            rightLmListUI.GetComponent<Text>().text = "lmList: ";
+        }
+        else if (type == "left")
+        {
+            leftLmListUI.GetComponent<Text>().text = "lmList: ";
+        }
+        
+
+
         for (int i = 0; i < 21; i++)
         {
             float x = float.Parse(points[i * 3]) / 100;
@@ -237,6 +341,23 @@ public class HandTracking : MonoBehaviour
             float z = float.Parse(points[i * 3 + 2]) / 100;
 
             handPoints[i].transform.localPosition = new Vector3(x, y, z);
+
+            if (type == "right")
+            {
+                rightLmListUI.GetComponent<Text>().text = rightLmListUI.GetComponent<Text>().text + "point[" + i + "] - " + x + ", " + y + ", " + z;
+                if (i != 20)
+                {
+                    rightLmListUI.GetComponent<Text>().text = rightLmListUI.GetComponent<Text>().text + " | ";
+                }
+            }
+            else if (type == "left")
+            {
+                leftLmListUI.GetComponent<Text>().text = leftLmListUI.GetComponent<Text>().text + "point[" + i + "] - " + x + ", " + y + ", " + z;
+                if (i != 20)
+                {
+                    leftLmListUI.GetComponent<Text>().text = leftLmListUI.GetComponent<Text>().text + " | ";
+                }
+            }
         }
 
         // position
@@ -266,6 +387,38 @@ public class HandTracking : MonoBehaviour
 
         handSphere.transform.localScale = new Vector3(sphereScale, sphereScale, sphereScale);
         this.transform.localScale = new Vector3(newScale, newScale, newScale); // original 0.5f
+    }
+
+    IEnumerator addLeftGestureHistory(string gesture)
+    {
+        if (leftGestureHistory.Count < 25)
+        {
+            leftGestureHistory.Add(gesture);
+
+        }
+        else
+        {
+            leftGestureHistory.RemoveAt(0);
+
+        }
+
+        yield return new WaitForSeconds(0.5f);
+    }
+
+    IEnumerator addRightGestureHistory(string gesture)
+    {
+        if (rightGestureHistory.Count < 25)
+        {
+            rightGestureHistory.Add(gesture);
+
+        }
+        else
+        {
+            rightGestureHistory.RemoveAt(0);
+
+        }
+
+        yield return new WaitForSeconds(0.5f);
     }
 }
 

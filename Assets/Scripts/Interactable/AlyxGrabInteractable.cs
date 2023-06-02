@@ -1,9 +1,12 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Events;
 
 public class AlyxGrabInteractable : MonoBehaviour
 {
+    public UnityEvent onInteract;
+
     public GameObject interactorObject;
     public bool isHitByRaycast = false;
     public float velocityThreshold = 2;
@@ -48,15 +51,16 @@ public class AlyxGrabInteractable : MonoBehaviour
                         StartCoroutine(toggleIsTriggerTrue());
                         toggleOnce = true;
                     }
-                    
-                    Vector3 handPos = interactorObject.transform.GetChild(0).transform.GetChild(9).transform.position;
-                    Quaternion handRot = interactorObject.transform.GetChild(0).transform.GetChild(9).transform.rotation;
-                    transform.position = new Vector3(handPos.x, handPos.y - 0.2f, handPos.z + 0.5f);
-                    transform.rotation = handRot;
+                    onInteract.Invoke();
+                    //Vector3 handPos = interactorObject.transform.GetChild(0).transform.GetChild(9).transform.position;
+                    //Quaternion handRot = interactorObject.transform.GetChild(0).transform.GetChild(9).transform.rotation;
+                    //transform.position = new Vector3(handPos.x, handPos.y - 0.2f, handPos.z + 0.5f);
+                    //transform.rotation = handRot;
                 } else
                 {
                     if (toggleOnce)
                     {
+                        interactorObject = null;
                         StartCoroutine(toggleIsTriggerFalse());
                         toggleOnce = true;
                     }
@@ -69,10 +73,14 @@ public class AlyxGrabInteractable : MonoBehaviour
             {
                 if (handInteractor.rightHandGesture == "grab")
                 {
-                    Vector3 handPos = interactorObject.transform.GetChild(0).transform.GetChild(9).transform.position;
-                    Quaternion handRot = interactorObject.transform.GetChild(0).transform.GetChild(9).transform.rotation;
-                    transform.position = new Vector3(handPos.x, handPos.y - 0.2f, handPos.z + 0.5f);
-                    transform.rotation = handRot;
+                    onInteract.Invoke();
+                    //Vector3 handPos = interactorObject.transform.GetChild(0).transform.GetChild(9).transform.position;
+                    //Quaternion handRot = interactorObject.transform.GetChild(0).transform.GetChild(9).transform.rotation;
+                    //transform.position = new Vector3(handPos.x, handPos.y - 0.2f, handPos.z + 0.5f);
+                    //transform.rotation = handRot;
+                } else
+                {
+                    interactorObject = null;
                 }
             }
 
@@ -115,6 +123,22 @@ public class AlyxGrabInteractable : MonoBehaviour
             //    }
             //}
         }
+    }
+
+    public void Grab()
+    {
+        Vector3 handPos = interactorObject.transform.GetChild(0).transform.GetChild(9).transform.position;
+        Quaternion handRot = interactorObject.transform.GetChild(0).transform.GetChild(9).transform.rotation;
+        transform.position = new Vector3(handPos.x, handPos.y - 0.2f, handPos.z + 0.5f);
+        transform.rotation = handRot;
+    }
+
+    public void forceGrab()
+    {
+        Vector3 handPos = interactorObject.transform.GetChild(0).transform.GetChild(9).transform.position;
+        Quaternion handRot = interactorObject.transform.GetChild(0).transform.GetChild(9).transform.rotation;
+        transform.position = new Vector3(handPos.x, handPos.y - 0.2f, handPos.z + 0.5f);
+        transform.rotation = handRot;
     }
 
     public Vector3 ComputeVelocity()
